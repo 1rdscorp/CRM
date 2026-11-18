@@ -26,6 +26,10 @@
     </div>
   </div>
   <div class="field">
+    <label for="address">Address</label>
+    <textarea id="address" name="address" maxlength="400" rows="2" style="min-height: 62px" placeholder="Street&#10;City, State ZIP" autocomplete="off"><%= customer.address %></textarea>
+  </div>
+  <div class="field">
     <label for="notes">Notes</label>
     <textarea id="notes" name="notes" maxlength="4000" placeholder="Anything worth remembering about this customer"><%= customer.notes %></textarea>
   </div>

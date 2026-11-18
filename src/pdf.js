@@ -135,7 +135,15 @@ function draw(doc, invoice, s) {
   let aY = y + 13;
   bold(10.5).text(invoice.customer.name, xA, aY, { width: colA - gap });
   aY = doc.y + 2;
-  for (const line of [invoice.customer.phone, invoice.customer.email].filter(Boolean)) {
+  const customerLines = [
+    ...String(invoice.customer.address || '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean),
+    invoice.customer.phone,
+    invoice.customer.email,
+  ].filter(Boolean);
+  for (const line of customerLines) {
     body(9.5, COLOR.muted).text(line, xA, aY, { width: colA - gap });
     aY = doc.y + 1.5;
   }

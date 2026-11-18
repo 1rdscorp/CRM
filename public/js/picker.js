@@ -140,7 +140,7 @@
   picker.querySelectorAll('[data-picker-change]').forEach(function (button) {
     button.addEventListener('click', function () {
       idInput.value = '';
-      newBox.querySelectorAll('input').forEach(function (field) {
+      newBox.querySelectorAll('input, textarea').forEach(function (field) {
         field.value = '';
       });
       input.value = '';

@@ -12,6 +12,7 @@ function readCustomerForm(body, prefix = '') {
     name: str(body[prefix + 'name'], 120),
     phone: str(body[prefix + 'phone'], 40),
     email: str(body[prefix + 'email'], 200),
+    address: str(body[prefix + 'address'], 400),
     notes: str(body[prefix + 'notes'], 4000),
   };
   let error = null;
@@ -23,12 +24,13 @@ function readCustomerForm(body, prefix = '') {
 function insertCustomer(db, customer) {
   const now = nowIso();
   const result = db.run(
-    `INSERT INTO customers (name, phone, phone_digits, email, notes, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO customers (name, phone, phone_digits, email, address, notes, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     customer.name,
     customer.phone,
     customer.phone.replace(/\D/g, ''),
     customer.email,
+    customer.address || '',
     customer.notes || '',
     now,
     now
@@ -94,7 +96,7 @@ module.exports = function customerRoutes({ db, invoices }) {
   router.get('/customers/new', (req, res) => {
     res.render('customers/form', {
       title: 'New customer',
-      customer: { name: '', phone: '', email: '', notes: '' },
+      customer: { name: '', phone: '', email: '', address: '', notes: '' },
       error: null,
     });
   });
@@ -144,12 +146,14 @@ module.exports = function customerRoutes({ db, invoices }) {
       });
     }
     db.run(
-      `UPDATE customers SET name = ?, phone = ?, phone_digits = ?, email = ?, notes = ?, updated_at = ?
+      `UPDATE customers SET name = ?, phone = ?, phone_digits = ?, email = ?, address = ?, notes = ?,
+              updated_at = ?
        WHERE id = ?`,
       customer.name,
       customer.phone,
       customer.phone.replace(/\D/g, ''),
       customer.email,
+      customer.address,
       customer.notes,
       nowIso(),
       existing.id

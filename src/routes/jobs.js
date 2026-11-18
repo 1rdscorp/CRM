@@ -171,7 +171,7 @@ module.exports = function jobRoutes({ db, invoices }) {
 
     if (!customer) {
       const form = readCustomerForm(req.body, 'new_customer_');
-      if (form.customer.name || form.customer.phone || form.customer.email) {
+      if (form.customer.name || form.customer.phone || form.customer.email || form.customer.address) {
         newCustomer = form.customer;
         error = form.error;
       } else {
