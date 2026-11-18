@@ -55,6 +55,10 @@
             <input type="email" id="new_customer_email" name="new_customer_email" value="<%= newCustomer ? newCustomer.email : '' %>" maxlength="200" autocomplete="off">
           </div>
         </div>
+        <div class="field">
+          <label for="new_customer_address">Address</label>
+          <textarea id="new_customer_address" name="new_customer_address" maxlength="400" rows="2" style="min-height: 62px" placeholder="Street&#10;City, State ZIP" autocomplete="off"><%= newCustomer ? newCustomer.address : '' %></textarea>
+        </div>
         <button class="link-btn" type="button" data-picker-change>Search for an existing customer instead</button>
       </div>
     </div>

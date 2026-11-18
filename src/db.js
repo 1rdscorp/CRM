@@ -101,6 +101,11 @@ const MIGRATIONS = [
   CREATE INDEX payments_invoice ON payments(invoice_id);
   CREATE INDEX payments_paid_on ON payments(paid_on);
   `,
+
+  // 2: customers can have a postal address.
+  `
+  ALTER TABLE customers ADD COLUMN address TEXT NOT NULL DEFAULT '';
+  `,
 ];
 
 function openDatabase(file) {
@@ -162,4 +167,4 @@ function openDatabase(file) {
   };
 }
 
-module.exports = { openDatabase };
+module.exports = { openDatabase, MIGRATIONS };

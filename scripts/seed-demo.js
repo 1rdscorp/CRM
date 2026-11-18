@@ -26,15 +26,15 @@ const at = (days, hour = 10) => new Date(Date.now() - days * 86400000 + hour * 6
 if (settings.number('tax_rate') === 0) settings.set({ tax_rate: 8.25 });
 
 const customers = [
-  ['Maria Alvarez', '(555) 201-4477', 'maria.alvarez@example.com', 'Prefers a text when the repair is ready.'],
-  ['James O’Connor', '(555) 318-9920', 'james.oconnor@example.com', ''],
-  ['Priya Nair', '(555) 442-0183', 'priya.nair@example.com', 'Runs the bakery next door. Give 10% off.'],
-  ['Daniel Kim', '(555) 677-3051', '', ''],
-  ['Sofia Rossi', '(555) 810-2296', 'sofia.rossi@example.com', ''],
-  ['Marcus Bell', '(555) 934-7712', 'marcus.bell@example.com', ''],
-  ['Hannah Schmidt', '(555) 126-5540', 'hannah.schmidt@example.com', ''],
-  ['Oakwood Dental Clinic', '(555) 700-1200', 'office@oakwooddental.example.com', 'Business account. Ask for Karen at the front desk.'],
-].map(([name, phone, email, notes]) => insertCustomer(db, { name, phone, email, notes }));
+  ['Maria Alvarez', '(555) 201-4477', 'maria.alvarez@example.com', '18 Maple Court\nSpringfield, IL 62704', 'Prefers a text when the repair is ready.'],
+  ['James O’Connor', '(555) 318-9920', 'james.oconnor@example.com', '', ''],
+  ['Priya Nair', '(555) 442-0183', 'priya.nair@example.com', '407 Circuit Avenue\nSpringfield, IL 62704', 'Runs the bakery next door. Give 10% off.'],
+  ['Daniel Kim', '(555) 677-3051', '', '', ''],
+  ['Sofia Rossi', '(555) 810-2296', 'sofia.rossi@example.com', '', ''],
+  ['Marcus Bell', '(555) 934-7712', 'marcus.bell@example.com', '', ''],
+  ['Hannah Schmidt', '(555) 126-5540', 'hannah.schmidt@example.com', '92 Lakeview Drive, Apt 3B\nSpringfield, IL 62711', ''],
+  ['Oakwood Dental Clinic', '(555) 700-1200', 'office@oakwooddental.example.com', '2100 Oakwood Boulevard, Suite 12\nSpringfield, IL 62702', 'Business account. Ask for Karen at the front desk.'],
+].map(([name, phone, email, address, notes]) => insertCustomer(db, { name, phone, email, address, notes }));
 
 function addJob(customerIndex, device_type, brand_model, serial_number, problem, receivedDaysAgo, steps) {
   const created = at(receivedDaysAgo, 0);

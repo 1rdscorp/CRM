@@ -83,6 +83,8 @@
         <dd><% if (customer.phone) { %><a href="tel:<%= customer.phone.replace(/[^0-9+]/g, '') %>"><%= customer.phone %></a><% } else { %><span class="muted">—</span><% } %></dd>
         <dt>Email</dt>
         <dd><% if (customer.email) { %><a href="mailto:<%= customer.email %>"><%= customer.email %></a><% } else { %><span class="muted">—</span><% } %></dd>
+        <dt>Address</dt>
+        <dd class="pre"><% if (customer.address) { %><%= customer.address %><% } else { %><span class="muted">—</span><% } %></dd>
 <% if (owed > 0) { -%>
         <dt>Owes</dt>
         <dd><strong class="num"><%= money(owed) %></strong></dd>

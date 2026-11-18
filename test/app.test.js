@@ -113,6 +113,7 @@ test('customer -> job -> invoice -> payment, end to end', async () => {
       new_customer_name: 'Ada <b>Lovelace</b>',
       new_customer_phone: '(555) 123-4567',
       new_customer_email: 'ada@example.com',
+      new_customer_address: '12 Analytical Row\nLondon',
       device_type: 'Laptop',
       brand_model: 'ThinkPad X1',
       serial_number: 'SN1',
@@ -124,6 +125,17 @@ test('customer -> job -> invoice -> payment, end to end', async () => {
     assert.equal(job.status, 200);
     assert.ok(job.body.includes('Ada &lt;b&gt;Lovelace&lt;/b&gt;'), 'customer text is escaped');
     assert.ok(!job.body.includes('<b>Lovelace</b>'));
+
+    // The address typed with the job is saved and shown on the customer's page.
+    assert.equal(db.get('SELECT address FROM customers WHERE id = 1').address, '12 Analytical Row\nLondon');
+    assert.ok((await t.get('/customers/1')).body.includes('12 Analytical Row'));
+    await t.post('/customers/1', {
+      name: 'Ada <b>Lovelace</b>',
+      phone: '(555) 123-4567',
+      email: 'ada@example.com',
+      address: '7 Engine Street\r\nLondon',
+    });
+    assert.equal(db.get('SELECT address FROM customers WHERE id = 1').address, '7 Engine Street\nLondon');
 
     // Search finds the customer by name and by phone digits.
     assert.ok((await t.get('/customers?q=lovelace')).body.includes('ada@example.com'));
@@ -200,7 +212,9 @@ test('customer -> job -> invoice -> payment, end to end', async () => {
     assert.equal(db.get('SELECT status FROM invoices WHERE id = 1').status, 'sent');
     await t.post('/invoices/1/payments', { amount: '50.00', method: 'card', paid_on: '2026-11-11' });
     assert.equal(db.get('SELECT status FROM invoices WHERE id = 1').status, 'paid');
-    assert.ok((await t.get('/invoices/1')).body.includes('PAID'));
+    const paidPage = (await t.get('/invoices/1')).body;
+    assert.ok(paidPage.includes('PAID'));
+    assert.ok(paidPage.includes('<div class="soft">7 Engine Street</div>'), 'invoice shows the customer address');
 
     // Removing a payment re-opens the invoice.
     await t.post('/invoices/1/payments/2/delete');

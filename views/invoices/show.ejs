@@ -51,6 +51,9 @@
       <div>
         <div class="paper-label">Bill to</div>
         <strong><%= invoice.customer.name %></strong>
+<% String(invoice.customer.address || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean).forEach(function (line) { -%>
+        <div class="soft"><%= line %></div>
+<% }) -%>
 <% if (invoice.customer.phone) { -%>
         <div class="soft"><%= invoice.customer.phone %></div>
 <% } -%>
