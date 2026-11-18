@@ -1,0 +1,136 @@
+<%- include('../partials/top') %>
+<%
+  var currentIndex = JOB_STATUS_KEYS.indexOf(job.status);
+  var age = daysBetween(job.date_received, today);
+-%>
+<header class="page-head">
+  <div>
+    <a class="crumb" href="/jobs"><%- icon('back', 14) %> Jobs</a>
+    <h1>Job #<%= job.id %> <span class="pill st-<%= job.status %>"><%= jobStatusLabel(job.status) %></span></h1>
+    <p class="sub"><%= job.brand_model || job.device_type %> for <a href="/customers/<%= job.customer_id %>"><%= job.customer_name %></a></p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/jobs/<%= job.id %>/edit"><%- icon('edit', 16) %> Edit</a>
+<% if (invoices.length === 0) { -%>
+    <form method="post" action="/jobs/<%= job.id %>/invoice">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-primary" type="submit"><%- icon('invoices', 16) %> Create invoice</button>
+    </form>
+<% } else { -%>
+    <a class="btn btn-primary" href="/invoices/<%= invoices[0].id %>"><%- icon('invoices', 16) %> View invoice</a>
+<% } -%>
+  </div>
+</header>
+
+<section class="card">
+  <form class="stepper" method="post" action="/jobs/<%= job.id %>/status" aria-label="Job status">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<% JOB_STATUSES.forEach(function (s, i) { -%>
+    <button class="step<%= i < currentIndex ? ' done' : i === currentIndex ? ' current' : '' %>" type="submit" name="status" value="<%= s.key %>"<%- i === currentIndex ? ' aria-current="step"' : '' %> title="<%= i === currentIndex ? 'Current status' : 'Move to ' + s.label %>"><%= s.label %></button>
+<% }) -%>
+  </form>
+</section>
+
+<div class="cols main-side">
+  <div>
+    <section class="card">
+      <h2>Problem reported</h2>
+<% if (job.problem) { -%>
+      <p class="pre"><%= job.problem %></p>
+<% } else { -%>
+      <p class="muted">No description was entered. <a href="/jobs/<%= job.id %>/edit">Add one</a></p>
+<% } -%>
+    </section>
+
+    <section class="card" id="notes">
+      <h2>Notes</h2>
+      <form class="note-form" method="post" action="/jobs/<%= job.id %>/notes">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <textarea name="body" maxlength="4000" required placeholder="What you found, what you did, parts ordered…" aria-label="Add a note"></textarea>
+        <button class="btn" type="submit"><%- icon('plus', 16) %> Add note</button>
+      </form>
+      <ul class="timeline">
+<% notes.forEach(function (note) { -%>
+<% if (note.kind === 'status') { -%>
+        <li class="event">
+          <div class="what">Moved to <strong><%= jobStatusLabel(note.body) %></strong></div>
+          <div class="when"><%= fmtDateTime(note.created_at) %></div>
+        </li>
+<% } else { -%>
+        <li>
+          <div class="pre"><%= note.body %></div>
+          <div class="when">
+            <%= fmtDateTime(note.created_at) %>
+            <form method="post" action="/jobs/<%= job.id %>/notes/<%= note.id %>/delete" data-confirm="Delete this note?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="link-btn danger" type="submit">Delete</button>
+            </form>
+          </div>
+        </li>
+<% } -%>
+<% }) -%>
+        <li class="event">
+          <div class="what">Job created</div>
+          <div class="when"><%= fmtDateTime(job.created_at) %></div>
+        </li>
+      </ul>
+    </section>
+  </div>
+
+  <aside>
+    <section class="card">
+      <h2>Device</h2>
+      <dl class="details">
+        <dt>Type</dt>
+        <dd><%= job.device_type || '—' %></dd>
+        <dt>Brand / model</dt>
+        <dd><%= job.brand_model || '—' %></dd>
+        <dt>Serial no.</dt>
+        <dd><%= job.serial_number || '—' %></dd>
+        <dt>Received</dt>
+        <dd><%= fmtDate(job.date_received) %><% if (job.status !== 'picked_up' && age > 0) { %> <span class="muted">(<%= plural(age, 'day') %> ago)</span><% } %></dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Customer</h2>
+      <dl class="details">
+        <dt>Name</dt>
+        <dd><a href="/customers/<%= job.customer_id %>"><%= job.customer_name %></a></dd>
+        <dt>Phone</dt>
+        <dd><% if (job.customer_phone) { %><a href="tel:<%= job.customer_phone.replace(/[^0-9+]/g, '') %>"><%= job.customer_phone %></a><% } else { %><span class="muted">—</span><% } %></dd>
+        <dt>Email</dt>
+        <dd><% if (job.customer_email) { %><a href="mailto:<%= job.customer_email %>"><%= job.customer_email %></a><% } else { %><span class="muted">—</span><% } %></dd>
+      </dl>
+    </section>
+
+    <section class="card">
+      <h2>Invoices</h2>
+<% if (invoices.length === 0) { -%>
+      <p class="muted">No invoice for this job yet.</p>
+<% } else { -%>
+      <ul class="payments">
+<% invoices.forEach(function (inv) { -%>
+        <li>
+          <div class="who">
+            <a href="/invoices/<%= inv.id %>"><strong><%= inv.number %></strong></a>
+            <span><%= money(inv.total) %><% if (inv.balance > 0 && inv.balance !== inv.total) { %> · <%= money(inv.balance) %> due<% } %></span>
+          </div>
+          <span class="pill st-<%= inv.display_status %>"><%= invoiceStatusLabel(inv.display_status) %></span>
+        </li>
+<% }) -%>
+      </ul>
+      <form method="post" action="/jobs/<%= job.id %>/invoice" style="margin-top: 12px">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="link-btn" type="submit">Create another invoice</button>
+      </form>
+<% } -%>
+    </section>
+
+    <form method="post" action="/jobs/<%= job.id %>/delete" data-confirm="Delete job #<%= job.id %> and its notes? This cannot be undone.">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-ghost btn-danger btn-sm" type="submit"><%- icon('trash', 15) %> Delete job</button>
+    </form>
+  </aside>
+</div>
+<%- include('../partials/bottom') %>

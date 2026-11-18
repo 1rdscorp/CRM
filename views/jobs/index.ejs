@@ -1,0 +1,128 @@
+<%- include('../partials/top', { scripts: showBoard ? ['board'] : [] }) %>
+<%
+  var jobsUrl = function (changes) {
+    var params = Object.assign({ status: status, q: q }, changes);
+    var parts = [];
+    if (params.status && params.status !== 'open') parts.push('status=' + encodeURIComponent(params.status));
+    if (params.q) parts.push('q=' + encodeURIComponent(params.q));
+    if (params.view) parts.push('view=' + params.view);
+    return '/jobs' + (parts.length ? '?' + parts.join('&') : '');
+  };
+  var chips = [{ key: 'open', label: 'All open' }].concat(JOB_STATUSES, [{ key: 'all', label: 'All' }]);
+-%>
+<header class="page-head">
+  <div>
+    <h1>Jobs</h1>
+    <p class="sub"><%= plural(counts.open, 'open job') %></p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="/jobs/new"><%- icon('plus') %> New job</a>
+  </div>
+</header>
+
+<div class="toolbar">
+  <nav class="chips" aria-label="Filter by status">
+<% chips.forEach(function (chip) { -%>
+    <a class="chip<%= status === chip.key ? ' active' : '' %>" href="<%= jobsUrl({ status: chip.key }) %>"<%- status === chip.key ? ' aria-current="true"' : '' %>><%= chip.label %> <b><%= counts[chip.key] || 0 %></b></a>
+<% }) -%>
+  </nav>
+  <form class="search" method="get" action="/jobs" role="search">
+<% if (status !== 'open') { -%>
+    <input type="hidden" name="status" value="<%= status %>">
+<% } -%>
+    <%- icon('search', 16) %>
+    <input type="search" name="q" value="<%= q %>" placeholder="Search jobs" aria-label="Search jobs">
+  </form>
+  <div class="seg" role="group" aria-label="View">
+    <a href="<%= jobsUrl({ view: 'board' }) %>"<%- view === 'board' ? ' class="active" aria-current="true"' : '' %>><%- icon('board', 16) %> Board</a>
+    <a href="<%= jobsUrl({ view: 'list' }) %>"<%- view === 'list' ? ' class="active" aria-current="true"' : '' %>><%- icon('list', 16) %> List</a>
+  </div>
+</div>
+
+<% if (showBoard) { -%>
+<div class="board" id="board" style="--board-cols: <%= columns.length %>" data-return-to="<%= returnTo %>">
+<% columns.forEach(function (col) {
+     var next = nextJobStatus(col.key); -%>
+  <section class="board-col st-<%= col.key %>" data-status="<%= col.key %>" aria-label="<%= col.label %>">
+    <header><span class="dot"></span> <%= col.label %> <span class="count"><%= col.jobs.length %></span></header>
+    <div class="board-list">
+<% if (col.jobs.length === 0) { -%>
+      <p class="board-empty">No jobs here</p>
+<% } -%>
+<% col.jobs.forEach(function (job) {
+     var age = daysBetween(job.date_received, today); -%>
+      <article class="job-card" draggable="true" data-job-id="<%= job.id %>">
+        <a class="job-card-link" href="/jobs/<%= job.id %>" draggable="false">
+          <span class="job-card-top">
+            <strong><%= job.customer_name %></strong>
+            <small class="<%= age >= 14 ? 'old' : '' %>" title="Received <%= fmtDate(job.date_received) %>"><%= age <= 0 ? 'today' : age + 'd' %></small>
+          </span>
+          <span class="job-card-device">#<%= job.id %> · <%= job.brand_model || job.device_type %></span>
+<% if (job.problem) { -%>
+          <p><%= job.problem %></p>
+<% } -%>
+        </a>
+<% if (next) { -%>
+        <form method="post" action="/jobs/<%= job.id %>/status">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <input type="hidden" name="status" value="<%= next.key %>">
+          <input type="hidden" name="next" value="<%= returnTo %>">
+          <button class="job-card-next" type="submit" title="Move this job to <%= next.label %>">Next: <%= next.label %> <%- icon('arrow', 13) %></button>
+        </form>
+<% } -%>
+      </article>
+<% }) -%>
+    </div>
+  </section>
+<% }) -%>
+</div>
+<% if (counts.all === 0) { -%>
+<div class="card empty">
+  <strong>No jobs yet</strong>
+  When a customer drops off a device, create a job to track it from here to pickup.
+  <div><a class="btn btn-primary" href="/jobs/new">Create your first job</a></div>
+</div>
+<% } -%>
+<% } else { -%>
+<section class="card flush">
+<% if (jobs.length === 0) { -%>
+  <div class="empty">
+    <strong><%= q ? 'No jobs match “' + q + '”' : 'No jobs here' %></strong>
+    <%= q ? 'Try a customer name, device, serial number or job number.' : 'Jobs with this status will show up here.' %>
+  </div>
+<% } else { -%>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Job</th>
+          <th>Customer</th>
+          <th>Device</th>
+          <th class="hide-sm">Problem</th>
+          <th class="hide-sm">Received</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+<% jobs.forEach(function (job) { -%>
+        <tr data-href="/jobs/<%= job.id %>">
+          <td class="strong nowrap"><a href="/jobs/<%= job.id %>">#<%= job.id %></a></td>
+          <td><%= job.customer_name %></td>
+          <td>
+            <%= job.brand_model || job.device_type %>
+<% if (job.brand_model && job.device_type) { -%>
+            <span class="muted hide-sm">· <%= job.device_type %></span>
+<% } -%>
+          </td>
+          <td class="hide-sm"><div class="clip muted"><%= job.problem %></div></td>
+          <td class="hide-sm nowrap"><%= fmtDate(job.date_received) %></td>
+          <td><span class="pill st-<%= job.status %>"><%= jobStatusLabel(job.status) %></span></td>
+        </tr>
+<% }) -%>
+      </tbody>
+    </table>
+  </div>
+<% } -%>
+</section>
+<% } -%>
+<%- include('../partials/bottom') %>

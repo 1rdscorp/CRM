@@ -1,0 +1,13 @@
+    </div>
+  </main>
+
+  <nav class="tabbar" aria-label="Main">
+    <a href="/"<%- currentPath === '/' ? ' class="active"' : '' %>><%- icon('dashboard', 22) %> Home</a>
+    <a href="/jobs"<%- /^\/jobs(?!\/new)/.test(currentPath) ? ' class="active"' : '' %>><%- icon('jobs', 22) %> Jobs</a>
+    <a class="add" href="/jobs/new"><%- icon('plus', 22) %> New job</a>
+    <a href="/customers"<%- /^\/customers/.test(currentPath) ? ' class="active"' : '' %>><%- icon('customers', 22) %> Customers</a>
+    <a href="/invoices"<%- /^\/invoices/.test(currentPath) ? ' class="active"' : '' %>><%- icon('invoices', 22) %> Invoices</a>
+  </nav>
+</div>
+</body>
+</html>

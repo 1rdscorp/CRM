@@ -1,0 +1,16 @@
+<%- include('partials/bare-top') %>
+    <h1>Sign in</h1>
+    <p class="sub">Enter the shop password to continue.</p>
+<% if (error) { -%>
+    <div class="form-error" role="alert"><%= error %></div>
+<% } -%>
+    <form method="post" action="/login">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="next" value="<%= next %>">
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required autofocus>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Sign in</button>
+    </form>
+<%- include('partials/bare-bottom') %>

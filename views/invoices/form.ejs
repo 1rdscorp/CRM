@@ -1,0 +1,123 @@
+<%- include('../partials/top', { scripts: ['invoice-form'] }) %>
+<%
+  var rows = invoice.items.length ? invoice.items : [{ kind: 'labor', description: '', quantity: 1, unit_price: 0, blank: true }];
+  var qtyText = function (q) { return String(Number((Number(q) || 0).toFixed(3))); };
+-%>
+<header class="page-head">
+  <div>
+    <a class="crumb" href="/invoices/<%= invoice.id %>"><%- icon('back', 14) %> Back to invoice</a>
+    <h1>Invoice <%= invoice.number %> <span class="pill st-<%= invoice.display_status %>"><%= invoiceStatusLabel(invoice.display_status) %></span></h1>
+    <p class="sub">For <a href="/customers/<%= invoice.customer.id %>"><%= invoice.customer.name %></a><% if (invoice.job) { %> · <a href="/jobs/<%= invoice.job.id %>">Job #<%= invoice.job.id %></a><% } %></p>
+  </div>
+</header>
+
+<form method="post" action="/invoices/<%= invoice.id %>" data-invoice-form data-currency="<%= shop.currency %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+  <section class="card">
+    <div class="field">
+      <label for="device">Device</label>
+      <input type="text" id="device" name="device" value="<%= invoice.device %>" maxlength="300" placeholder="e.g. Samsung Galaxy S23 (Phone) · S/N R58N…" autocomplete="off">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="issue_date">Issue date</label>
+        <input type="date" id="issue_date" name="issue_date" value="<%= invoice.issue_date %>" required>
+      </div>
+      <div class="field">
+        <label for="due_date">Due date</label>
+        <input type="date" id="due_date" name="due_date" value="<%= invoice.due_date %>" required>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Parts and labor</h2>
+    <div class="items" data-items>
+      <div class="items-head" aria-hidden="true">
+        <span>Type</span><span>Description</span><span class="right">Qty</span><span class="right">Unit price</span><span class="right">Amount</span><span></span>
+      </div>
+<% rows.forEach(function (item, index) { -%>
+      <div class="item-row" data-item>
+        <select class="kind" name="items[<%= index %>][kind]" aria-label="Type">
+<% ITEM_KINDS.forEach(function (kind) { -%>
+          <option value="<%= kind.key %>"<%= item.kind === kind.key ? ' selected' : '' %>><%= kind.label %></option>
+<% }) -%>
+        </select>
+        <input class="desc" type="text" name="items[<%= index %>][description]" value="<%= item.description %>" maxlength="300" placeholder="Description" aria-label="Description" autocomplete="off">
+        <input class="qty" type="text" inputmode="decimal" name="items[<%= index %>][quantity]" value="<%= qtyText(item.quantity) %>" placeholder="Qty" aria-label="Quantity" autocomplete="off">
+        <input class="price" type="text" inputmode="decimal" name="items[<%= index %>][unit_price]" value="<%= item.blank ? '' : inputAmount(item.unit_price) %>" placeholder="Price" aria-label="Unit price" autocomplete="off">
+        <span class="line-total" data-line-total></span>
+        <button class="btn btn-ghost btn-icon remove" type="button" data-remove aria-label="Remove line"><%- icon('x', 16) %></button>
+      </div>
+<% }) -%>
+    </div>
+
+    <template data-item-template>
+      <div class="item-row" data-item>
+        <select class="kind" name="kind" aria-label="Type">
+<% ITEM_KINDS.forEach(function (kind) { -%>
+          <option value="<%= kind.key %>"><%= kind.label %></option>
+<% }) -%>
+        </select>
+        <input class="desc" type="text" name="description" maxlength="300" placeholder="Description" aria-label="Description" autocomplete="off">
+        <input class="qty" type="text" inputmode="decimal" name="quantity" value="1" placeholder="Qty" aria-label="Quantity" autocomplete="off">
+        <input class="price" type="text" inputmode="decimal" name="unit_price" placeholder="Price" aria-label="Unit price" autocomplete="off">
+        <span class="line-total" data-line-total></span>
+        <button class="btn btn-ghost btn-icon remove" type="button" data-remove aria-label="Remove line"><%- icon('x', 16) %></button>
+      </div>
+    </template>
+
+    <div class="item-adders">
+      <button class="btn btn-sm" type="button" data-add="part"><%- icon('plus', 15) %> Add part</button>
+      <button class="btn btn-sm" type="button" data-add="labor"><%- icon('plus', 15) %> Add labor</button>
+    </div>
+
+    <div class="totals">
+      <div class="totals-row">
+        <span>Subtotal</span>
+        <span class="num" data-total="subtotal"></span>
+      </div>
+      <div class="totals-row">
+        <span class="inline">
+          <label for="discount_value" style="margin: 0; font-weight: 400">Discount</label>
+          <input type="text" inputmode="decimal" id="discount_value" name="discount_value" value="<%= invoice.discount_value ? (invoice.discount_type === 'percent' ? qtyText(invoice.discount_value) : inputAmount(invoice.discount_value)) : '' %>" placeholder="0" autocomplete="off">
+          <select name="discount_type" aria-label="Discount type">
+            <option value="amount"<%= invoice.discount_type === 'percent' ? '' : ' selected' %>><%= shop.currency %></option>
+            <option value="percent"<%= invoice.discount_type === 'percent' ? ' selected' : '' %>>%</option>
+          </select>
+        </span>
+        <span class="num" data-total="discount"></span>
+      </div>
+      <div class="totals-row">
+        <span class="inline">
+          <label for="tax_rate" style="margin: 0; font-weight: 400"><%= shop.taxLabel %></label>
+          <input type="text" inputmode="decimal" id="tax_rate" name="tax_rate" value="<%= qtyText(invoice.tax_rate) %>" autocomplete="off">
+          <span>%</span>
+        </span>
+        <span class="num" data-total="tax"></span>
+      </div>
+      <label class="check totals-row totals-check">
+        <input type="checkbox" name="tax_labor" value="1"<%= invoice.tax_labor ? ' checked' : '' %>>
+        Charge <%= shop.taxLabel.toLowerCase() === 'tax' ? 'tax' : shop.taxLabel %> on labor too
+      </label>
+      <div class="totals-row grand">
+        <span>Total</span>
+        <span class="num" data-total="total"></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="field" style="margin-bottom: 0">
+      <label for="notes">Notes on the invoice</label>
+      <textarea id="notes" name="notes" maxlength="4000" placeholder="Work carried out, warranty details… (the customer will see this)"><%= invoice.notes %></textarea>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit">Save invoice</button>
+    <a class="btn btn-ghost" href="/invoices/<%= invoice.id %>">Cancel</a>
+  </div>
+</form>
+<%- include('../partials/bottom') %>

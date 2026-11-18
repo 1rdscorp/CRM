@@ -1,0 +1,131 @@
+<%- include('partials/top') %>
+<header class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="sub"><%= fmtDate(today) %></p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="/jobs/new"><%- icon('plus') %> New job</a>
+  </div>
+</header>
+
+<% if (needsDetails) { -%>
+<div class="notice">
+  <div>
+    <strong>Finish setting up your shop</strong>
+    Add your address, phone number and logo so they appear on your invoices, and set your tax rate.
+  </div>
+  <a class="btn" href="/settings">Open settings</a>
+</div>
+<% } -%>
+
+<section class="stats" aria-label="At a glance">
+  <a class="stat" href="/jobs?status=open">
+    <span class="stat-label"><%- icon('jobs', 16) %> Open jobs</span>
+    <span class="stat-value"><%= openJobs %></span>
+    <span class="stat-note">in the shop right now</span>
+  </a>
+  <a class="stat" href="/jobs?status=ready&amp;view=list">
+    <span class="stat-label"><%- icon('check', 16) %> Ready for pickup</span>
+    <span class="stat-value"><%= readyJobs.length %></span>
+    <span class="stat-note">waiting for the customer</span>
+  </a>
+  <a class="stat" href="/invoices?status=unpaid">
+    <span class="stat-label"><%- icon('invoices', 16) %> Unpaid invoices</span>
+    <span class="stat-value"><%= money(unpaidTotal) %></span>
+    <span class="stat-note">
+      <%= plural(unpaid.length, 'invoice') %><% if (overdueCount) { %> · <span class="bad"><%= overdueCount %> overdue</span><% } %>
+    </span>
+  </a>
+  <div class="stat">
+    <span class="stat-label"><%- icon('cash', 16) %> Collected this month</span>
+    <span class="stat-value"><%= money(collected.total) %></span>
+    <span class="stat-note"><%= monthLabel %> · <%= plural(collected.n, 'payment') %></span>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Open jobs by status</h2>
+  <div class="status-tiles">
+<% jobsByStatus.forEach(function (s) { -%>
+    <a class="status-tile st-<%= s.key %><%= s.count ? '' : ' zero' %>" href="/jobs?status=<%= s.key %>&amp;view=list">
+      <strong><%= s.count %></strong>
+      <%= s.label %>
+    </a>
+<% }) -%>
+  </div>
+</section>
+
+<div class="cols">
+  <section class="card flush">
+    <div class="card-head">
+      <h2>Ready for pickup</h2>
+      <a href="/jobs?status=ready&amp;view=list">View all</a>
+    </div>
+<% if (readyJobs.length === 0) { -%>
+    <p class="empty">Nothing is waiting to be picked up.</p>
+<% } else { -%>
+    <ul class="rows">
+<% readyJobs.slice(0, 8).forEach(function (job) {
+     var waiting = daysBetween(job.status_changed_at.slice(0, 10), today); -%>
+      <li>
+        <div class="row-main">
+          <a href="/jobs/<%= job.id %>"><%= job.customer_name %></a>
+          <div><%= job.brand_model || job.device_type %> · Job #<%= job.id %></div>
+        </div>
+        <div class="row-side">
+<% if (job.customer_phone) { -%>
+          <a class="nowrap" href="tel:<%= job.customer_phone.replace(/[^0-9+]/g, '') %>"><%- icon('phone', 14) %> <%= job.customer_phone %></a>
+<% } -%>
+          <div class="muted"><%= waiting <= 0 ? 'ready today' : 'waiting ' + plural(waiting, 'day') %></div>
+        </div>
+      </li>
+<% }) -%>
+    </ul>
+<% if (readyJobs.length > 8) { -%>
+    <p class="table-note"><a href="/jobs?status=ready&amp;view=list">And <%= readyJobs.length - 8 %> more</a></p>
+<% } -%>
+<% } -%>
+  </section>
+
+  <section class="card flush">
+    <div class="card-head">
+      <h2>Unpaid invoices</h2>
+      <a href="/invoices?status=unpaid">View all</a>
+    </div>
+<% if (unpaid.length === 0) { -%>
+    <p class="empty">No one owes you money. <% if (draftCount) { %><a href="/invoices?status=draft"><%= plural(draftCount, 'draft') %> not sent yet</a>.<% } %></p>
+<% } else { -%>
+    <ul class="rows">
+<% unpaid.slice(0, 8).forEach(function (inv) {
+     var late = daysBetween(inv.due_date, today); -%>
+      <li>
+        <div class="row-main">
+          <a href="/invoices/<%= inv.id %>"><%= inv.customer_name %></a>
+          <div><%= inv.number %><% if (inv.device) { %> · <%= inv.device.split(' · ')[0] %><% } %></div>
+        </div>
+        <div class="row-side">
+          <strong><%= money(inv.balance) %></strong>
+<% if (inv.display_status === 'overdue') { -%>
+          <span class="pill st-overdue"><%= plural(late, 'day') %> overdue</span>
+<% } else { -%>
+          <span class="muted">due <%= fmtDate(inv.due_date) %></span>
+<% } -%>
+        </div>
+      </li>
+<% }) -%>
+    </ul>
+<% if (unpaid.length > 8 || draftCount) { -%>
+    <p class="table-note">
+<% if (unpaid.length > 8) { -%>
+      <a href="/invoices?status=unpaid">And <%= unpaid.length - 8 %> more</a><%= draftCount ? ' · ' : '' %>
+<% } -%>
+<% if (draftCount) { -%>
+      <a href="/invoices?status=draft"><%= plural(draftCount, 'draft') %> not sent yet</a>
+<% } -%>
+    </p>
+<% } -%>
+<% } -%>
+  </section>
+</div>
+<%- include('partials/bottom') %>
