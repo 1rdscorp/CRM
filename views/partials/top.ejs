@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="<%= locals.csrfToken || '' %>">
+  <title><%= title %> · <%= locals.shop ? shop.name : 'RDS Electronics' %></title>
+  <link rel="stylesheet" href="/css/app.css?v=<%= assetVersion %>">
+  <script src="/js/app.js?v=<%= assetVersion %>" defer></script>
+<% (locals.scripts || []).forEach(function (name) { -%>
+  <script src="/js/<%= name %>.js?v=<%= assetVersion %>" defer></script>
+<% }) -%>
+</head>
+<%
+  var navItems = [
+    { href: '/', label: 'Dashboard', icon: 'dashboard', match: /^\/$/ },
+    { href: '/jobs', label: 'Jobs', icon: 'jobs', match: /^\/jobs/ },
+    { href: '/customers', label: 'Customers', icon: 'customers', match: /^\/customers/ },
+    { href: '/invoices', label: 'Invoices', icon: 'invoices', match: /^\/invoices/ },
+  ];
+  var initials = brandInitials(shop.name);
+  var flash = takeFlash();
+-%>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <a class="brand" href="/">
+      <span class="brand-mark"><%= initials %></span>
+      <span><%= shop.name %></span>
+    </a>
+    <a class="btn btn-primary btn-block" href="/jobs/new"><%- icon('plus') %> New job</a>
+    <nav class="nav" aria-label="Main">
+<% navItems.forEach(function (item) { -%>
+      <a href="<%= item.href %>"<%- item.match.test(currentPath) ? ' class="active" aria-current="page"' : '' %>><%- icon(item.icon) %> <%= item.label %></a>
+<% }) -%>
+    </nav>
+    <nav class="nav nav-foot" aria-label="Account">
+      <a href="/settings"<%- /^\/settings/.test(currentPath) ? ' class="active" aria-current="page"' : '' %>><%- icon('settings') %> Settings</a>
+      <form method="post" action="/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit"><%- icon('logout') %> Log out</button>
+      </form>
+    </nav>
+  </aside>
+
+  <header class="topbar">
+    <a class="brand" href="/">
+      <span class="brand-mark"><%= initials %></span>
+      <span><%= shop.name %></span>
+    </a>
+    <div class="topbar-actions">
+      <a href="/settings" aria-label="Settings"><%- icon('settings', 20) %></a>
+      <form method="post" action="/logout">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button type="submit" aria-label="Log out"><%- icon('logout', 20) %></button>
+      </form>
+    </div>
+  </header>
+
+  <main class="main">
+    <div class="page<%= locals.narrow ? ' narrow' : '' %>">
+<% if (flash) { -%>
+      <div class="flash flash-<%= flash.type === 'error' ? 'error' : 'success' %>" role="status">
+        <%- icon(flash.type === 'error' ? 'alert' : 'check') %>
+        <span><%= flash.message %></span>
+      </div>
+<% } -%>

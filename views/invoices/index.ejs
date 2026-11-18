@@ -1,0 +1,82 @@
+<%- include('../partials/top') %>
+<%
+  var invoicesUrl = function (key) {
+    var parts = [];
+    if (key !== 'all') parts.push('status=' + key);
+    if (q) parts.push('q=' + encodeURIComponent(q));
+    return '/invoices' + (parts.length ? '?' + parts.join('&') : '');
+  };
+  var chips = [{ key: 'all', label: 'All' }].concat(INVOICE_STATUSES);
+-%>
+<header class="page-head">
+  <div>
+    <h1>Invoices</h1>
+    <p class="sub">Create an invoice from a job, or from a customer’s page.</p>
+  </div>
+</header>
+
+<div class="toolbar">
+  <nav class="chips" aria-label="Filter by status">
+<% chips.forEach(function (chip) {
+     var active = status === chip.key || (status === 'unpaid' && (chip.key === 'sent' || chip.key === 'overdue')); -%>
+    <a class="chip<%= active ? ' active' : '' %>" href="<%= invoicesUrl(chip.key) %>"<%- active ? ' aria-current="true"' : '' %>><%= chip.label %> <b><%= counts[chip.key] %></b></a>
+<% }) -%>
+  </nav>
+  <form class="search" method="get" action="/invoices" role="search">
+<% if (status !== 'all') { -%>
+    <input type="hidden" name="status" value="<%= status %>">
+<% } -%>
+    <%- icon('search', 16) %>
+    <input type="search" name="q" value="<%= q %>" placeholder="Search invoices" aria-label="Search invoices">
+  </form>
+</div>
+
+<section class="card flush">
+<% if (invoices.length === 0) { -%>
+  <div class="empty">
+<% if (counts.all === 0) { -%>
+    <strong>No invoices yet</strong>
+    Open a repair job and press “Create invoice”. The customer and device are filled in for you.
+    <div><a class="btn btn-primary" href="/jobs">Go to jobs</a></div>
+<% } else { -%>
+    <strong><%= q ? 'No invoices match “' + q + '”' : 'No invoices here' %></strong>
+    <%= q ? 'Try an invoice number or a customer name.' : 'Invoices with this status will show up here.' %>
+<% } -%>
+  </div>
+<% } else { -%>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Invoice</th>
+          <th>Customer</th>
+          <th class="hide-sm">Issued</th>
+          <th class="hide-sm">Due</th>
+          <th class="right hide-sm">Total</th>
+          <th class="right">Balance</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+<% invoices.forEach(function (inv) { -%>
+        <tr data-href="/invoices/<%= inv.id %>">
+          <td class="strong nowrap"><a href="/invoices/<%= inv.id %>"><%= inv.number %></a></td>
+          <td>
+            <%= inv.customer_name %>
+<% if (inv.device) { -%>
+            <div class="muted clip hide-sm"><%= inv.device.split(' · ')[0] %></div>
+<% } -%>
+          </td>
+          <td class="hide-sm nowrap"><%= fmtDate(inv.issue_date) %></td>
+          <td class="hide-sm nowrap"><%= fmtDate(inv.due_date) %></td>
+          <td class="right num hide-sm"><%= money(inv.total) %></td>
+          <td class="right num"><%= money(inv.balance) %></td>
+          <td><span class="pill st-<%= inv.display_status %>"><%= invoiceStatusLabel(inv.display_status) %></span></td>
+        </tr>
+<% }) -%>
+      </tbody>
+    </table>
+  </div>
+<% } -%>
+</section>
+<%- include('../partials/bottom') %>

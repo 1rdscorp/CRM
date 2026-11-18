@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="<%= locals.csrfToken || '' %>">
+  <title><%= title %> · <%= locals.shop ? shop.name : 'RDS Electronics' %></title>
+  <link rel="stylesheet" href="/css/app.css?v=<%= assetVersion %>">
+  <script src="/js/app.js?v=<%= assetVersion %>" defer></script>
+</head>
+<body>
+<main class="auth">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <span class="brand-mark"><%= brandInitials(locals.shop ? shop.name : 'RDS') %></span>
+      <span><%= locals.shop ? shop.name : 'RDS Electronics' %></span>
+    </div>

@@ -1,0 +1,282 @@
+<%- include('../partials/top') %>
+<%
+  var trim = function (n) { return String(Number((Number(n) || 0).toFixed(3))); };
+  var addressLines = String(business.business_address || '').split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+  var contactLine = [business.business_phone, business.business_email].filter(Boolean).join(' · ');
+  var mailto = 'mailto:' + encodeURIComponent(email.to || '').replace(/%40/g, '@') + '?subject=' + encodeURIComponent(email.subject) + '&body=' + encodeURIComponent(email.message);
+  var canDraft = invoice.status === 'sent' && invoice.paid === 0;
+-%>
+<header class="page-head">
+  <div>
+    <a class="crumb" href="/invoices"><%- icon('back', 14) %> Invoices</a>
+    <h1>Invoice <%= invoice.number %> <span class="pill st-<%= invoice.display_status %>"><%= invoiceStatusLabel(invoice.display_status) %></span></h1>
+    <p class="sub">For <a href="/customers/<%= invoice.customer.id %>"><%= invoice.customer.name %></a><% if (invoice.job) { %> · <a href="/jobs/<%= invoice.job.id %>">Job #<%= invoice.job.id %></a><% } %></p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/invoices/<%= invoice.id %>/edit"><%- icon('edit', 16) %> Edit</a>
+    <button class="btn" type="button" data-print><%- icon('print', 16) %> Print</button>
+    <a class="btn" href="/invoices/<%= invoice.id %>/pdf?download=1"><%- icon('download', 16) %> PDF</a>
+    <button class="btn" type="button" data-open-dialog="email-dialog"><%- icon('mail', 16) %> Email</button>
+  </div>
+</header>
+
+<div class="invoice-layout">
+  <article class="paper" aria-label="Invoice">
+    <header class="paper-head">
+      <div class="paper-biz">
+<% if (shop.hasLogo) { -%>
+        <img class="paper-logo" src="/logo?v=<%= shop.logoVersion %>" alt="<%= shop.name %> logo">
+<% } -%>
+        <strong><%= business.business_name %></strong>
+<% addressLines.forEach(function (line) { -%>
+        <div><%= line %></div>
+<% }) -%>
+<% if (contactLine) { -%>
+        <div><%= contactLine %></div>
+<% } -%>
+<% if (business.business_website) { -%>
+        <div><%= business.business_website %></div>
+<% } -%>
+      </div>
+      <div class="paper-title">
+        <h2>INVOICE</h2>
+        <div class="number"><%= invoice.number %></div>
+<% if (invoice.status === 'paid') { -%>
+        <div class="paper-stamp">PAID</div>
+<% } -%>
+      </div>
+    </header>
+
+    <section class="paper-meta">
+      <div>
+        <div class="paper-label">Bill to</div>
+        <strong><%= invoice.customer.name %></strong>
+<% if (invoice.customer.phone) { -%>
+        <div class="soft"><%= invoice.customer.phone %></div>
+<% } -%>
+<% if (invoice.customer.email) { -%>
+        <div class="soft"><%= invoice.customer.email %></div>
+<% } -%>
+      </div>
+      <div>
+<% if (invoice.device) { -%>
+        <div class="paper-label">Device</div>
+<% invoice.device.split(' · ').forEach(function (line) { -%>
+        <div><%= line %></div>
+<% }) -%>
+<% } -%>
+      </div>
+      <dl class="paper-dates">
+        <dt>Issue date</dt>
+        <dd><%= fmtDate(invoice.issue_date) %></dd>
+        <dt>Due date</dt>
+        <dd><%= fmtDate(invoice.due_date) %></dd>
+<% if (invoice.job_id) { -%>
+        <dt>Job</dt>
+        <dd>#<%= invoice.job_id %></dd>
+<% } -%>
+      </dl>
+    </section>
+
+    <table class="paper-items">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Type</th>
+          <th class="right">Qty</th>
+          <th class="right">Unit price</th>
+          <th class="right">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+<% if (invoice.items.length === 0) { -%>
+        <tr><td colspan="5" class="kind">No items yet. <a href="/invoices/<%= invoice.id %>/edit">Add parts and labor</a></td></tr>
+<% } -%>
+<% invoice.items.forEach(function (item) { -%>
+        <tr>
+          <td><%= item.description || (item.kind === 'labor' ? 'Labor' : 'Part') %></td>
+          <td class="kind"><%= item.kind === 'labor' ? 'Labor' : 'Part' %></td>
+          <td class="right num"><%= trim(item.quantity) %></td>
+          <td class="right num"><%= money(item.unit_price) %></td>
+          <td class="right num"><%= money(item.line_total) %></td>
+        </tr>
+<% }) -%>
+      </tbody>
+    </table>
+
+    <div class="paper-totals">
+      <div><span class="soft">Subtotal</span><span class="num"><%= money(invoice.subtotal) %></span></div>
+<% if (invoice.discount > 0) { -%>
+      <div><span class="soft">Discount<%= invoice.discount_type === 'percent' ? ' (' + trim(invoice.discount_value) + '%)' : '' %></span><span class="num">-<%= money(invoice.discount) %></span></div>
+<% } -%>
+<% if (invoice.tax_rate > 0) { -%>
+      <div><span class="soft"><%= business.tax_label || 'Tax' %> (<%= trim(invoice.tax_rate) %>%)<%= invoice.tax_labor ? '' : ' on parts' %></span><span class="num"><%= money(invoice.tax) %></span></div>
+<% } -%>
+<% if (invoice.payments.length === 0) { -%>
+      <div class="grand"><span>Total</span><span class="num"><%= money(invoice.total) %></span></div>
+<% } else { -%>
+      <div class="strong"><span>Total</span><span class="num"><%= money(invoice.total) %></span></div>
+<% invoice.payments.forEach(function (p) { -%>
+      <div><span class="soft">Paid <%= fmtDate(p.paid_on) %> · <%= paymentMethodLabel(p.method) %></span><span class="num">-<%= money(p.amount) %></span></div>
+<% }) -%>
+      <div class="grand"><span>Balance due</span><span class="num"><%= money(invoice.balance) %></span></div>
+<% } -%>
+    </div>
+
+<% if (invoice.notes) { -%>
+    <section class="paper-notes">
+      <div class="paper-label">Notes</div>
+      <div class="pre"><%= invoice.notes %></div>
+    </section>
+<% } -%>
+<% if (business.invoice_footer) { -%>
+    <footer class="paper-foot pre"><%= business.invoice_footer %></footer>
+<% } -%>
+  </article>
+
+  <aside class="invoice-side">
+    <section class="card">
+      <div class="side-status">
+        <span class="muted"><%= invoice.status === 'paid' ? 'Paid in full' : 'Balance due' %></span>
+        <span class="pill st-<%= invoice.display_status %>"><%= invoiceStatusLabel(invoice.display_status) %></span>
+      </div>
+      <div class="balance"><%= money(invoice.status === 'paid' ? invoice.total : invoice.balance) %></div>
+      <p class="muted" style="margin-top: 2px">
+<% if (invoice.status === 'paid') { -%>
+        Nothing left to pay.
+<% } else if (invoice.display_status === 'overdue') { -%>
+        Was due <%= fmtDate(invoice.due_date) %> (<%= plural(daysBetween(invoice.due_date, today), 'day') %> ago).
+<% } else if (invoice.status === 'draft') { -%>
+        Draft: not given to the customer yet.
+<% } else { -%>
+        Due <%= fmtDate(invoice.due_date) %>.
+<% } -%>
+      </p>
+<% if (invoice.emailed_at) { -%>
+      <p class="muted" style="margin-top: 6px; font-size: 13.5px">Emailed to <%= invoice.emailed_to %> on <%= fmtDateTime(invoice.emailed_at) %>.</p>
+<% } -%>
+<% if (invoice.status === 'draft') { -%>
+      <form method="post" action="/invoices/<%= invoice.id %>/status" style="margin-top: 14px">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-primary btn-block" type="submit" name="status" value="sent"><%- icon('check', 16) %> Mark as sent</button>
+      </form>
+<% } -%>
+<% if (invoice.status !== 'paid' && invoice.balance === 0 && invoice.items.length > 0) { -%>
+      <form method="post" action="/invoices/<%= invoice.id %>/status" style="margin-top: 10px">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-block" type="submit" name="status" value="paid">Mark as paid (no charge)</button>
+      </form>
+<% } -%>
+    </section>
+
+<% if (invoice.balance > 0) { -%>
+    <section class="card">
+      <h2>Record a payment</h2>
+      <form class="stack" method="post" action="/invoices/<%= invoice.id %>/payments">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="pay-methods" role="radiogroup" aria-label="Payment method">
+<% PAYMENT_METHODS.forEach(function (m, i) { -%>
+          <label><input type="radio" name="method" value="<%= m.key %>"<%= i === 0 ? ' checked' : '' %>><span><%= m.label %></span></label>
+<% }) -%>
+        </div>
+        <div class="field-row" style="gap: 8px; grid-template-columns: 1fr 1fr">
+          <div>
+            <label for="pay-amount">Amount (<%= shop.currency %>)</label>
+            <input type="text" inputmode="decimal" id="pay-amount" name="amount" value="<%= inputAmount(invoice.balance) %>" required autocomplete="off">
+          </div>
+          <div>
+            <label for="pay-date">Date</label>
+            <input type="date" id="pay-date" name="paid_on" value="<%= today %>" required>
+          </div>
+        </div>
+        <div>
+          <label for="pay-note">Note <span class="muted" style="font-weight: 400">(optional)</span></label>
+          <input type="text" id="pay-note" name="note" maxlength="200" placeholder="e.g. card ending 4242" autocomplete="off">
+        </div>
+        <button class="btn btn-ok btn-block" type="submit"><%- icon('cash', 16) %> Record payment</button>
+      </form>
+    </section>
+<% } -%>
+
+<% if (invoice.payments.length) { -%>
+    <section class="card">
+      <h2>Payments</h2>
+      <ul class="payments">
+<% invoice.payments.forEach(function (p) { -%>
+        <li>
+          <div class="who">
+            <%= paymentMethodLabel(p.method) %> · <%= fmtDate(p.paid_on) %>
+<% if (p.note) { -%>
+            <span><%= p.note %></span>
+<% } -%>
+          </div>
+          <div class="amt">
+            <%= money(p.amount) %>
+            <form method="post" action="/invoices/<%= invoice.id %>/payments/<%= p.id %>/delete" data-confirm="Remove this <%= money(p.amount) %> payment?">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <button class="btn btn-ghost btn-icon" type="submit" aria-label="Remove payment"><%- icon('x', 15) %></button>
+            </form>
+          </div>
+        </li>
+<% }) -%>
+      </ul>
+    </section>
+<% } -%>
+
+    <div class="actions">
+<% if (canDraft) { -%>
+      <form method="post" action="/invoices/<%= invoice.id %>/status">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-ghost btn-sm" type="submit" name="status" value="draft">Move back to draft</button>
+      </form>
+<% } -%>
+      <form method="post" action="/invoices/<%= invoice.id %>/delete" data-confirm="Delete invoice <%= invoice.number %><%= invoice.payments.length ? ' and its recorded payments' : '' %>? This cannot be undone.">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-ghost btn-danger btn-sm" type="submit"><%- icon('trash', 15) %> Delete invoice</button>
+      </form>
+    </div>
+  </aside>
+</div>
+
+<dialog id="email-dialog" aria-labelledby="email-dialog-title">
+  <div class="dialog-head">
+    <h2 id="email-dialog-title">Email invoice <%= invoice.number %></h2>
+    <button class="btn btn-ghost btn-icon" type="button" data-close-dialog aria-label="Close"><%- icon('x', 18) %></button>
+  </div>
+  <div class="dialog-body">
+<% if (emailReady) { -%>
+    <form method="post" action="/invoices/<%= invoice.id %>/email" data-busy-text="Sending…">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label for="email-to">To</label>
+        <input type="email" id="email-to" name="to" value="<%= email.to %>" required placeholder="customer@example.com">
+<% if (!email.to) { -%>
+        <p class="hint">This customer has no email address saved yet.</p>
+<% } -%>
+      </div>
+      <div class="field">
+        <label for="email-subject">Subject</label>
+        <input type="text" id="email-subject" name="subject" value="<%= email.subject %>" maxlength="200" required>
+      </div>
+      <div class="field">
+        <label for="email-message">Message</label>
+        <textarea id="email-message" name="message" rows="9" maxlength="5000" required><%= email.message %></textarea>
+        <p class="hint">The invoice is attached as a PDF.</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit"><%- icon('mail', 16) %> Send email</button>
+        <button class="btn btn-ghost" type="button" data-close-dialog>Cancel</button>
+      </div>
+    </form>
+<% } else { -%>
+    <p>To send invoices straight from here, add your email account details in <a href="/settings#email">Settings</a>. It takes a couple of minutes and only needs doing once.</p>
+    <hr class="divider">
+    <p class="muted" style="margin-bottom: 12px">Until then, you can download the PDF and send it from your own email app:</p>
+    <div class="form-actions">
+      <a class="btn" href="/invoices/<%= invoice.id %>/pdf?download=1"><%- icon('download', 16) %> Download PDF</a>
+      <a class="btn" href="<%= mailto %>"><%- icon('mail', 16) %> Open my email app</a>
+    </div>
+<% } -%>
+  </div>
+</dialog>
+<%- include('../partials/bottom') %>

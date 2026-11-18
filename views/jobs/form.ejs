@@ -1,0 +1,102 @@
+<%- include('../partials/top', { narrow: true, scripts: job.id ? [] : ['picker'] }) %>
+<header class="page-head">
+  <div>
+    <a class="crumb" href="<%= job.id ? '/jobs/' + job.id : '/jobs' %>"><%- icon('back', 14) %> <%= job.id ? 'Back to job' : 'Jobs' %></a>
+    <h1><%= job.id ? 'Edit job #' + job.id : 'New job' %></h1>
+  </div>
+</header>
+
+<form method="post" action="<%= job.id ? '/jobs/' + job.id : '/jobs' %>">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+<% if (error) { -%>
+  <div class="form-error" role="alert"><%= error %></div>
+<% } -%>
+
+  <section class="card">
+    <h2>Customer</h2>
+<% if (job.id) { -%>
+    <div class="picked">
+      <div>
+        <strong><%= customer.name %></strong>
+        <span><%= [customer.phone, customer.email].filter(Boolean).join(' · ') %></span>
+      </div>
+      <a href="/customers/<%= customer.id %>">View customer</a>
+    </div>
+<% } else { -%>
+    <div class="picker" data-picker data-mode="<%= customer ? 'picked' : newCustomer ? 'new' : 'search' %>">
+      <input type="hidden" name="customer_id" value="<%= customer ? customer.id : '' %>" data-picker-id>
+
+      <div data-picker-search<%= customer || newCustomer ? ' hidden' : '' %>>
+        <label for="customer-search">Find a customer, or type a new name</label>
+        <input type="search" id="customer-search" placeholder="Name, phone or email" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="customer-results" data-picker-input<%= customer || newCustomer ? '' : ' autofocus' %>>
+        <ul class="picker-results" id="customer-results" role="listbox" hidden data-picker-results></ul>
+      </div>
+
+      <div class="picked" data-picker-picked<%= customer ? '' : ' hidden' %>>
+        <div>
+          <strong data-picked-name><%= customer ? customer.name : '' %></strong>
+          <span data-picked-contact><%= customer ? [customer.phone, customer.email].filter(Boolean).join(' · ') : '' %></span>
+        </div>
+        <button class="link-btn" type="button" data-picker-change>Change</button>
+      </div>
+
+      <div class="new-customer" data-picker-new<%= newCustomer ? '' : ' hidden' %>>
+        <div class="field">
+          <label for="new_customer_name">New customer’s name</label>
+          <input type="text" id="new_customer_name" name="new_customer_name" value="<%= newCustomer ? newCustomer.name : '' %>" maxlength="120" autocomplete="off">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="new_customer_phone">Phone</label>
+            <input type="tel" id="new_customer_phone" name="new_customer_phone" value="<%= newCustomer ? newCustomer.phone : '' %>" maxlength="40" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="new_customer_email">Email</label>
+            <input type="email" id="new_customer_email" name="new_customer_email" value="<%= newCustomer ? newCustomer.email : '' %>" maxlength="200" autocomplete="off">
+          </div>
+        </div>
+        <button class="link-btn" type="button" data-picker-change>Search for an existing customer instead</button>
+      </div>
+    </div>
+<% } -%>
+  </section>
+
+  <section class="card">
+    <h2>Device</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="device_type">Device type</label>
+        <input type="text" id="device_type" name="device_type" value="<%= job.device_type %>" list="device-types" maxlength="80" placeholder="Phone, laptop, TV…" autocomplete="off">
+        <datalist id="device-types">
+<% DEVICE_TYPES.forEach(function (type) { -%>
+          <option value="<%= type %>"></option>
+<% }) -%>
+        </datalist>
+      </div>
+      <div class="field">
+        <label for="brand_model">Brand / model</label>
+        <input type="text" id="brand_model" name="brand_model" value="<%= job.brand_model %>" maxlength="160" placeholder="e.g. Samsung Galaxy S23" autocomplete="off">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="serial_number">Serial number</label>
+        <input type="text" id="serial_number" name="serial_number" value="<%= job.serial_number %>" maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="date_received">Date received</label>
+        <input type="date" id="date_received" name="date_received" value="<%= job.date_received %>" required>
+      </div>
+    </div>
+    <div class="field">
+      <label for="problem">Problem description</label>
+      <textarea id="problem" name="problem" maxlength="4000" placeholder="What the customer says is wrong, and anything left with the device (charger, case…)"><%= job.problem %></textarea>
+    </div>
+  </section>
+
+  <div class="form-actions">
+    <button class="btn btn-primary" type="submit"><%= job.id ? 'Save changes' : 'Create job' %></button>
+    <a class="btn btn-ghost" href="<%= job.id ? '/jobs/' + job.id : '/jobs' %>">Cancel</a>
+  </div>
+</form>
+<%- include('../partials/bottom') %>

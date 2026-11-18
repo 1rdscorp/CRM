@@ -1,0 +1,201 @@
+<%- include('partials/top', { narrow: true }) %>
+<header class="page-head">
+  <div>
+    <h1>Settings</h1>
+    <p class="sub">Your business details, invoice defaults, email and password.</p>
+  </div>
+</header>
+
+<nav class="settings-nav" aria-label="Sections">
+  <a class="chip" href="#business">Business</a>
+  <a class="chip" href="#invoicing">Invoices and tax</a>
+  <a class="chip" href="#email">Email</a>
+  <a class="chip" href="#password">Password</a>
+  <a class="chip" href="#backup">Backup</a>
+</nav>
+
+<section class="card" id="business">
+  <h2>Business details</h2>
+  <p class="hint">Shown at the top of every invoice.</p>
+
+  <div class="field">
+    <span class="label">Logo</span>
+    <div class="logo-row">
+      <div class="logo-preview">
+<% if (shop.hasLogo) { -%>
+        <img src="/logo?v=<%= shop.logoVersion %>" alt="Current logo">
+<% } else { -%>
+        No logo yet
+<% } -%>
+      </div>
+      <form method="post" action="/settings/logo" data-logo-form>
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="hidden" name="logo" data-logo-data>
+        <input type="file" accept="image/*" hidden data-logo-file aria-label="Choose a logo picture">
+        <button class="btn" type="button" data-logo-pick><%= shop.hasLogo ? 'Change logo' : 'Upload logo' %></button>
+      </form>
+<% if (shop.hasLogo) { -%>
+      <form method="post" action="/settings/logo/delete" data-confirm="Remove the logo from invoices?">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <button class="btn btn-ghost btn-danger" type="submit">Remove</button>
+      </form>
+<% } -%>
+    </div>
+    <p class="hint" data-logo-error>Any picture file works. A wide logo on a white or clear background looks best.</p>
+  </div>
+
+  <form method="post" action="/settings/business">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field">
+      <label for="business_name">Business name</label>
+      <input type="text" id="business_name" name="business_name" value="<%= s.business_name %>" maxlength="120" required>
+    </div>
+    <div class="field">
+      <label for="business_address">Address</label>
+      <textarea id="business_address" name="business_address" maxlength="400" rows="3" style="min-height: 76px" placeholder="Street&#10;City, State ZIP"><%= s.business_address %></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="business_phone">Phone</label>
+        <input type="tel" id="business_phone" name="business_phone" value="<%= s.business_phone %>" maxlength="60">
+      </div>
+      <div class="field">
+        <label for="business_email">Email</label>
+        <input type="email" id="business_email" name="business_email" value="<%= s.business_email %>" maxlength="200">
+      </div>
+    </div>
+    <div class="field">
+      <label for="business_website">Website</label>
+      <input type="text" id="business_website" name="business_website" value="<%= s.business_website %>" maxlength="200" placeholder="www.example.com">
+    </div>
+    <button class="btn btn-primary" type="submit">Save business details</button>
+  </form>
+</section>
+
+<section class="card" id="invoicing">
+  <h2>Invoices and tax</h2>
+  <p class="hint">Starting values for new invoices. You can still change the tax and dates on each invoice.</p>
+  <form method="post" action="/settings/invoicing">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field-row three">
+      <div class="field">
+        <label for="tax_rate">Tax rate (%)</label>
+        <input type="text" inputmode="decimal" id="tax_rate" name="tax_rate" value="<%= Number(s.tax_rate) || 0 %>">
+      </div>
+      <div class="field">
+        <label for="tax_label">Tax name</label>
+        <input type="text" id="tax_label" name="tax_label" value="<%= s.tax_label %>" maxlength="30" placeholder="Tax, Sales tax, VAT, GST…">
+      </div>
+      <div class="field">
+        <label for="currency_symbol">Currency symbol</label>
+        <input type="text" id="currency_symbol" name="currency_symbol" value="<%= s.currency_symbol %>" maxlength="6">
+      </div>
+    </div>
+    <div class="field">
+      <label class="check">
+        <input type="checkbox" name="tax_labor" value="1"<%= s.tax_labor === '1' ? ' checked' : '' %>>
+        Charge tax on labor as well as parts
+      </label>
+      <p class="hint">Untick this if repair labor is not taxed where you are. Parts are always taxed.</p>
+    </div>
+    <div class="field-row three">
+      <div class="field">
+        <label for="invoice_prefix">Invoice number prefix</label>
+        <input type="text" id="invoice_prefix" name="invoice_prefix" value="<%= s.invoice_prefix %>" maxlength="12">
+      </div>
+      <div class="field">
+        <label for="next_invoice_number">Next invoice number</label>
+        <input type="text" inputmode="numeric" id="next_invoice_number" name="next_invoice_number" value="<%= s.next_invoice_number %>">
+      </div>
+      <div class="field">
+        <label for="due_days">Payment due after (days)</label>
+        <input type="text" inputmode="numeric" id="due_days" name="due_days" value="<%= s.due_days %>">
+      </div>
+    </div>
+    <div class="field">
+      <label for="invoice_footer">Message at the bottom of every invoice</label>
+      <textarea id="invoice_footer" name="invoice_footer" maxlength="600" rows="2" style="min-height: 60px" placeholder="Thank you note, warranty or payment terms"><%= s.invoice_footer %></textarea>
+    </div>
+    <div class="field">
+      <label for="paper_size">Paper size for PDFs</label>
+      <select id="paper_size" name="paper_size" style="max-width: 240px">
+        <option value="LETTER"<%= s.paper_size === 'A4' ? '' : ' selected' %>>US Letter</option>
+        <option value="A4"<%= s.paper_size === 'A4' ? ' selected' : '' %>>A4</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" type="submit">Save invoice settings</button>
+  </form>
+</section>
+
+<section class="card" id="email">
+  <div class="card-head">
+    <h2>Email</h2>
+    <span class="pill <%= emailReady ? 'st-paid' : 'st-draft' %>"><%= emailReady ? 'Set up' : 'Not set up' %></span>
+  </div>
+  <p class="hint" style="margin: -8px 0 14px">Invoices are sent from your own email account, so replies come back to you. Your email provider calls these “SMTP” settings.</p>
+  <form method="post" action="/settings/email">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field-row">
+      <div class="field">
+        <label for="smtp_host">Mail server</label>
+        <input type="text" id="smtp_host" name="smtp_host" value="<%= s.smtp_host %>" maxlength="200" placeholder="smtp.gmail.com" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="smtp_port">Port</label>
+        <input type="text" inputmode="numeric" id="smtp_port" name="smtp_port" value="<%= s.smtp_port %>" placeholder="465" autocomplete="off">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="smtp_user">Username</label>
+        <input type="text" id="smtp_user" name="smtp_user" value="<%= s.smtp_user %>" maxlength="200" placeholder="you@example.com" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="smtp_pass">Password</label>
+        <input type="password" id="smtp_pass" name="smtp_pass" maxlength="500" placeholder="<%= hasSmtpPassword ? 'Saved. Leave empty to keep it' : '' %>" autocomplete="new-password">
+      </div>
+    </div>
+    <div class="field">
+      <label for="smtp_from">Send from address</label>
+      <input type="email" id="smtp_from" name="smtp_from" value="<%= s.smtp_from %>" maxlength="200" placeholder="<%= s.business_email || 'Same as your business email' %>" autocomplete="off">
+      <p class="hint">Leave empty to use your business email.</p>
+    </div>
+    <p class="hint" style="margin: 0 0 14px"><strong>Using Gmail?</strong> Mail server <code>smtp.gmail.com</code>, port <code>465</code>, username is your Gmail address, and the password is an “app password” that you create in your Google account under Security (2-Step Verification must be on).</p>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Save email settings</button>
+<% if (emailReady) { -%>
+      <button class="btn" type="submit" formaction="/settings/email/test" formnovalidate data-busy-text="Sending…">Send a test email</button>
+<% } -%>
+    </div>
+  </form>
+</section>
+
+<section class="card" id="password">
+  <h2>Shop password</h2>
+  <p class="hint">Everyone signs in with this one password. Changing it signs out all other devices.</p>
+  <form method="post" action="/settings/password">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <div class="field" style="max-width: 320px">
+      <label for="current">Current password</label>
+      <input type="password" id="current" name="current" autocomplete="current-password" required>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label for="password-new">New password</label>
+        <input type="password" id="password-new" name="password" autocomplete="new-password" minlength="8" required>
+      </div>
+      <div class="field">
+        <label for="confirm">New password again</label>
+        <input type="password" id="confirm" name="confirm" autocomplete="new-password" minlength="8" required>
+      </div>
+    </div>
+    <button class="btn btn-primary" type="submit">Change password</button>
+  </form>
+</section>
+
+<section class="card" id="backup">
+  <h2>Backup</h2>
+  <p class="hint">Download a copy of everything (customers, jobs, invoices and settings) as one file. Do this regularly and keep the file somewhere safe, like a USB stick or cloud drive.</p>
+  <a class="btn" href="/settings/backup"><%- icon('download', 16) %> Download backup</a>
+</section>
+<%- include('partials/bottom') %>

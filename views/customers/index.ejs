@@ -1,0 +1,68 @@
+<%- include('../partials/top') %>
+<header class="page-head">
+  <div>
+    <h1>Customers</h1>
+    <p class="sub"><%= plural(total, 'customer') %></p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-primary" href="/customers/new"><%- icon('plus') %> New customer</a>
+  </div>
+</header>
+
+<div class="toolbar">
+  <form class="search" method="get" action="/customers" role="search" style="flex: 1 1 340px; max-width: 420px">
+    <%- icon('search', 16) %>
+    <input type="search" name="q" value="<%= q %>" placeholder="Search by name, phone or email" aria-label="Search customers"<%= q ? '' : ' autofocus' %>>
+  </form>
+<% if (q) { -%>
+  <a href="/customers">Clear search</a>
+<% } -%>
+</div>
+
+<section class="card flush">
+<% if (customers.length === 0) { -%>
+  <div class="empty">
+<% if (q) { -%>
+    <strong>No customers match “<%= q %>”</strong>
+    Check the spelling, or add them as a new customer.
+    <div><a class="btn" href="/customers/new">New customer</a></div>
+<% } else { -%>
+    <strong>No customers yet</strong>
+    Customers are added automatically when you create a job, or you can add one here.
+    <div><a class="btn btn-primary" href="/jobs/new">Create your first job</a></div>
+<% } -%>
+  </div>
+<% } else { -%>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Phone</th>
+          <th class="hide-sm">Email</th>
+          <th class="right">Jobs</th>
+        </tr>
+      </thead>
+      <tbody>
+<% customers.forEach(function (c) { -%>
+        <tr data-href="/customers/<%= c.id %>">
+          <td class="strong"><a href="/customers/<%= c.id %>"><%= c.name %></a></td>
+          <td class="nowrap"><%= c.phone || '—' %></td>
+          <td class="hide-sm"><%= c.email || '—' %></td>
+          <td class="right nowrap">
+<% if (c.open_jobs) { -%>
+            <span class="pill st-repairing"><%= c.open_jobs %> open</span>
+<% } -%>
+            <span class="muted num"><%= c.job_count %></span>
+          </td>
+        </tr>
+<% }) -%>
+      </tbody>
+    </table>
+  </div>
+<% if (truncated) { -%>
+  <p class="table-note">Showing the first <%= customers.length %> customers. Search to find someone else.</p>
+<% } -%>
+<% } -%>
+</section>
+<%- include('../partials/bottom') %>

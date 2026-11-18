@@ -1,0 +1,106 @@
+<%- include('../partials/top') %>
+<header class="page-head">
+  <div>
+    <a class="crumb" href="/customers"><%- icon('back', 14) %> Customers</a>
+    <h1><%= customer.name %></h1>
+    <p class="sub">Customer since <%= fmtDate(customer.created_at.slice(0, 10)) %></p>
+  </div>
+  <div class="actions">
+    <a class="btn" href="/customers/<%= customer.id %>/edit"><%- icon('edit', 16) %> Edit</a>
+    <form method="post" action="/invoices">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="hidden" name="customer_id" value="<%= customer.id %>">
+      <button class="btn" type="submit"><%- icon('invoices', 16) %> New invoice</button>
+    </form>
+    <a class="btn btn-primary" href="/jobs/new?customer_id=<%= customer.id %>"><%- icon('plus') %> New job</a>
+  </div>
+</header>
+
+<div class="cols main-side">
+  <div>
+    <section class="card flush">
+      <h2>Repair jobs</h2>
+<% if (jobs.length === 0) { -%>
+      <p class="empty">No repair jobs yet.</p>
+<% } else { -%>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Job</th><th>Device</th><th class="hide-sm">Received</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+<% jobs.forEach(function (job) { -%>
+            <tr data-href="/jobs/<%= job.id %>">
+              <td class="strong nowrap"><a href="/jobs/<%= job.id %>">#<%= job.id %></a></td>
+              <td>
+                <%= job.brand_model || job.device_type %>
+<% if (job.brand_model && job.device_type) { -%>
+                <span class="muted">· <%= job.device_type %></span>
+<% } -%>
+              </td>
+              <td class="hide-sm nowrap"><%= fmtDate(job.date_received) %></td>
+              <td><span class="pill st-<%= job.status %>"><%= jobStatusLabel(job.status) %></span></td>
+            </tr>
+<% }) -%>
+          </tbody>
+        </table>
+      </div>
+<% } -%>
+    </section>
+
+    <section class="card flush">
+      <h2>Invoices</h2>
+<% if (invoices.length === 0) { -%>
+      <p class="empty">No invoices yet.</p>
+<% } else { -%>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Invoice</th><th class="hide-sm">Issued</th><th class="right">Total</th><th class="right">Balance</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+<% invoices.forEach(function (inv) { -%>
+            <tr data-href="/invoices/<%= inv.id %>">
+              <td class="strong nowrap"><a href="/invoices/<%= inv.id %>"><%= inv.number %></a></td>
+              <td class="hide-sm nowrap"><%= fmtDate(inv.issue_date) %></td>
+              <td class="right num"><%= money(inv.total) %></td>
+              <td class="right num"><%= money(inv.balance) %></td>
+              <td><span class="pill st-<%= inv.display_status %>"><%= invoiceStatusLabel(inv.display_status) %></span></td>
+            </tr>
+<% }) -%>
+          </tbody>
+        </table>
+      </div>
+<% } -%>
+    </section>
+  </div>
+
+  <aside>
+    <section class="card">
+      <h2>Contact</h2>
+      <dl class="details">
+        <dt>Phone</dt>
+        <dd><% if (customer.phone) { %><a href="tel:<%= customer.phone.replace(/[^0-9+]/g, '') %>"><%= customer.phone %></a><% } else { %><span class="muted">—</span><% } %></dd>
+        <dt>Email</dt>
+        <dd><% if (customer.email) { %><a href="mailto:<%= customer.email %>"><%= customer.email %></a><% } else { %><span class="muted">—</span><% } %></dd>
+<% if (owed > 0) { -%>
+        <dt>Owes</dt>
+        <dd><strong class="num"><%= money(owed) %></strong></dd>
+<% } -%>
+      </dl>
+<% if (customer.notes) { -%>
+      <hr class="divider">
+      <div class="label">Notes</div>
+      <p class="pre"><%= customer.notes %></p>
+<% } -%>
+    </section>
+
+<% if (jobs.length === 0 && invoices.length === 0) { -%>
+    <form method="post" action="/customers/<%= customer.id %>/delete" data-confirm="Delete <%= customer.name %>? This cannot be undone.">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button class="btn btn-ghost btn-danger btn-sm" type="submit"><%- icon('trash', 15) %> Delete customer</button>
+    </form>
+<% } -%>
+  </aside>
+</div>
+<%- include('../partials/bottom') %>

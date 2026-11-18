@@ -1,0 +1,20 @@
+<%- include('partials/bare-top') %>
+    <h1>Welcome! Let’s set up your shop</h1>
+    <p class="sub">Choose one password for you and your staff. You will use it to sign in on every device.</p>
+<% if (error) { -%>
+    <div class="form-error" role="alert"><%= error %></div>
+<% } -%>
+    <form method="post" action="/setup">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <div class="field">
+        <label for="password">Shop password</label>
+        <input type="password" id="password" name="password" autocomplete="new-password" minlength="8" required autofocus>
+        <p class="hint">At least 8 characters.</p>
+      </div>
+      <div class="field">
+        <label for="confirm">Type it again</label>
+        <input type="password" id="confirm" name="confirm" autocomplete="new-password" minlength="8" required>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Save password and continue</button>
+    </form>
+<%- include('partials/bare-bottom') %>
